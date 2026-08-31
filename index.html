@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Kebun Belajar — Membaca & Berhitung</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  /* =========================================================
+     KONFIGURASI SOAL — GURU EDIT DI SINI KALAU MAU GANTI TANPA GOOGLE SHEETS,
+     ATAU LIHAT CONFIG.SHEET_URL_* DI BAGIAN <script> UNTUK PAKAI GOOGLE SHEETS.
+     ========================================================= */
+  :root{
+    --forest:#1F3D2B;
+    --grass:#5FA463;
+    --grass-dark:#3F7D45;
+    --sun:#FFC93C;
+    --sky:#7EC8E3;
+    --soil:#8B5E3C;
+    --cream:#FFFBF0;
+    --ink:#20361F;
+    --danger:#E3654E;
+    --radius-lg:28px;
+    --radius-md:18px;
+    --shadow-soft:0 10px 0 rgba(31,61,43,0.15);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:'Nunito',sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 12% 8%, #FFF6D6 0%, transparent 40%),
+      radial-gradient(circle at 88% 85%, #DFF0E0 0%, transparent 45%),
+      var(--cream);
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  h1,h2,h3{font-family:'Baloo 2',sans-serif;margin:0;}
+
+  /* decorative blobs */
+  .blob{position:fixed;border-radius:50%;opacity:0.35;z-index:0;pointer-events:none;}
+  .blob.b1{width:220px;height:220px;background:var(--sun);top:-60px;left:-60px;}
+  .blob.b2{width:260px;height:260px;background:var(--sky);bottom:-90px;right:-80px;}
+  .blob.b3{width:120px;height:120px;background:var(--grass);top:40%;right:-40px;opacity:0.2;}
+
+  .app{position:relative;z-index:1;max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+
+  /* top bar */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 18px 8px;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .brand-mark{font-size:30px;}
+  .brand h1{font-size:20px;color:var(--forest);}
+  .menu-btn{
+    width:46px;height:46px;border-radius:14px;border:none;
+    background:#fff;box-shadow:var(--shadow-soft);
+    font-size:20px;cursor:pointer;color:var(--forest);
+  }
+  .menu-btn:active{transform:translateY(3px);box-shadow:0 6px 0 rgba(31,61,43,0.15);}
+
+  /* side panel */
+  .panel-overlay{position:fixed;inset:0;background:rgba(31,61,43,0.35);display:none;z-index:20;}
+  .panel-overlay.open{display:block;}
+  .panel{
+    position:fixed;top:0;right:0;height:100%;width:min(340px,86vw);
+    background:#fff;box-shadow:-8px 0 24px rgba(0,0,0,0.12);
+    padding:22px;transform:translateX(100%);transition:transform .25s ease;z-index:21;
+    overflow-y:auto;
+  }
+  .panel.open{transform:translateX(0);}
+  .panel h2{font-size:19px;color:var(--forest);margin-bottom:6px;}
+  .panel p{font-size:14.5px;line-height:1.5;color:#4b5a48;}
+  .panel .close-btn{float:right;background:none;border:none;font-size:20px;cursor:pointer;color:var(--forest);}
+  .panel-section{margin-top:18px;padding-top:16px;border-top:1px dashed #e2ddca;}
+  .panel-section:first-of-type{border-top:none;margin-top:14px;padding-top:0;}
+  .btn-ghost{
+    display:inline-block;margin-top:8px;padding:10px 16px;border-radius:12px;
+    background:var(--sky);color:var(--forest);font-weight:800;text-decoration:none;
+    font-family:'Baloo 2',sans-serif;font-size:14px;border:none;cursor:pointer;
+  }
+  .status-line{font-size:13px;color:var(--grass-dark);margin-top:10px;}
+
+  /* main content */
+  main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;}
+
+  .home h2{font-size:26px;color:var(--forest);margin-bottom:6px;}
+  .home p.sub{color:#5c6b57;font-size:15px;margin-bottom:26px;}
+  .mode-grid{display:flex;flex-direction:column;gap:16px;width:100%;max-width:340px;}
+  .mode-card{
+    display:flex;align-items:center;gap:14px;padding:18px 20px;border-radius:var(--radius-lg);
+    border:none;cursor:pointer;text-align:left;font-family:'Baloo 2',sans-serif;
+    box-shadow:var(--shadow-soft);
+  }
+  .mode-card:active{transform:translateY(4px);box-shadow:0 6px 0 rgba(31,61,43,0.15);}
+  .mode-card.read{background:linear-gradient(135deg,#8FD98A,var(--grass));color:#fff;}
+  .mode-card.count{background:linear-gradient(135deg,#8FD2E8,var(--sky));color:var(--forest);}
+  .mode-card.susun{background:linear-gradient(135deg,#FFDB7A,var(--sun));color:var(--forest);}
+  .mode-emoji{font-size:34px;}
+  .mode-title{font-size:19px;font-weight:800;}
+  .mode-desc{font-size:13px;font-weight:600;opacity:.9;}
+
+  /* quiz screen */
+  .quiz{width:100%;max-width:380px;}
+  .progress-row{display:flex;align-items:center;gap:10px;margin-bottom:18px;}
+  .progress-track{flex:1;height:10px;border-radius:6px;background:#EAE6D6;overflow:hidden;}
+  .progress-fill{height:100%;background:var(--sun);border-radius:6px;transition:width .3s ease;}
+  .stars{font-size:14px;color:var(--soil);font-weight:800;white-space:nowrap;}
+
+  .stage{
+    background:#fff;border-radius:var(--radius-lg);padding:30px 20px 26px;
+    box-shadow:var(--shadow-soft);margin-bottom:20px;
+  }
+  .prompt{font-size:15px;color:#5c6b57;font-weight:700;margin-bottom:14px;}
+  .big-emoji{font-size:74px;line-height:1;margin-bottom:8px;}
+  .count-row{font-size:44px;letter-spacing:6px;margin-bottom:6px;}
+  .speak-btn{
+    border:none;background:var(--sun);color:var(--forest);width:44px;height:44px;
+    border-radius:50%;font-size:18px;cursor:pointer;box-shadow:0 5px 0 #E0A82A;
+  }
+  .speak-btn:active{transform:translateY(4px);box-shadow:none;}
+
+  .choices{display:flex;flex-direction:column;gap:12px;width:100%;max-width:380px;}
+  .choice-btn{
+    padding:16px;border-radius:var(--radius-md);border:none;background:#fff;
+    box-shadow:var(--shadow-soft);font-family:'Baloo 2',sans-serif;font-size:19px;
+    font-weight:700;color:var(--ink);cursor:pointer;
+  }
+  .choice-btn:active{transform:translateY(4px);box-shadow:0 6px 0 rgba(31,61,43,0.15);}
+  .choice-btn.correct{background:var(--grass);color:#fff;}
+  .choice-btn.wrong{background:var(--danger);color:#fff;}
+
+  .feedback{font-size:16px;font-weight:800;margin-top:14px;min-height:22px;font-family:'Baloo 2',sans-serif;}
+  .feedback.ok{color:var(--grass-dark);}
+  .feedback.no{color:var(--danger);}
+
+  /* susun huruf */
+  .answer-slot{
+    display:flex;justify-content:center;gap:6px;flex-wrap:wrap;min-height:52px;
+    margin:10px 0 18px;
+  }
+  .letter-tile{
+    width:42px;height:48px;border-radius:10px;border:none;
+    background:var(--sun);color:var(--forest);font-family:'Baloo 2',sans-serif;
+    font-size:22px;font-weight:800;cursor:pointer;box-shadow:0 5px 0 #E0A82A;
+  }
+  .letter-tile:active{transform:translateY(4px);box-shadow:none;}
+  .letter-tile.placed{background:#EAE6D6;color:#b7ae94;box-shadow:none;cursor:default;}
+  .answer-box{
+    display:flex;justify-content:center;gap:6px;flex-wrap:wrap;
+    min-height:52px;padding:8px;border-bottom:3px dashed #D8D2BC;margin-bottom:6px;
+  }
+  .undo-btn{
+    border:none;background:none;color:#8a7e5c;font-weight:700;font-size:13px;
+    text-decoration:underline;cursor:pointer;margin-top:4px;
+  }
+
+  .back-link{
+    margin-top:22px;background:none;border:none;color:#6b7a66;font-weight:700;
+    font-size:14px;cursor:pointer;text-decoration:underline;
+  }
+
+  /* result screen */
+  .result h2{font-size:26px;color:var(--forest);}
+  .result .big-emoji{font-size:90px;}
+  .result p{color:#5c6b57;font-size:16px;margin:10px 0 24px;}
+  .primary-btn{
+    padding:16px 30px;border-radius:16px;border:none;background:var(--sun);
+    color:var(--forest);font-family:'Baloo 2',sans-serif;font-weight:800;font-size:17px;
+    cursor:pointer;box-shadow:0 6px 0 #E0A82A;
+  }
+  .primary-btn:active{transform:translateY(5px);box-shadow:none;}
+
+  footer{text-align:center;padding:14px;font-size:12px;color:#9aa596;}
+
+  @media (max-width:360px){
+    .big-emoji{font-size:60px;}
+    .count-row{font-size:34px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+<div class="blob b3"></div>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <span class="brand-mark">🌿</span>
+      <h1>Kebun Belajar</h1>
+    </div>
+    <button class="menu-btn" id="menuBtn" aria-label="Menu">☰</button>
+  </div>
+
+  <main id="main"></main>
+
+  <footer>Dibuat untuk kelas 1 · membaca &amp; berhitung</footer>
+</div>
+
+<div class="panel-overlay" id="panelOverlay"></div>
+<div class="panel" id="panel">
+  <button class="close-btn" id="closePanel">✕</button>
+  <h2>Cara Edit Soal</h2>
+  <p>Soal di game ini diambil dari Google Sheets. Ubah isi sheet, soal di game akan ikut berubah (perlu beberapa menit sampai muncul, dan tekan "Muat Ulang Soal" di bawah).</p>
+
+  <div class="panel-section">
+    <h2 style="font-size:16px;">1. Sheet Kata (Membaca)</h2>
+    <p>Kolom: <b>kata, emoji, tampil, jawaban, salah1, salah2</b><br>
+    <b>tampil</b> = kata dengan bagian kosong (pakai <code>__</code>) — boleh ditaruh di depan, tengah, atau belakang<br>
+    <b>jawaban</b> = suku kata yang hilang<br>
+    Contoh baris yang benar:</p>
+    <p style="font-size:13.5px;background:#F7F5EA;border-radius:10px;padding:10px 12px;">
+    baju, 👕, ba__, ju, mi, ka<br>
+    api, 🍎, a__, pi, ta, ku<br>
+    keong, 🐌, ke__, ong, tan, mas<br>
+    paus, 🐳, __us, pa, sa, ba</p>
+    <p style="font-size:13px;color:#8a7e5c;"><b>⚠️ Penting:</b> pastikan blank memang memisahkan suku kata yang benar (contoh: "a-pi" bukan "ap-i"), supaya anak tidak belajar pemisahan suku kata yang keliru.</p>
+    <p style="font-size:13px;color:#8a7e5c;"><b>⚠️ Pilih kata 2 suku kata saja</b> (pola KV-KV seperti "i-kan", "ma-can"). Kata 3+ suku kata seperti "ke-lin-ci" umumnya masih terlalu sulit untuk anak kelas 1 yang baru belajar membaca.</p>
+  </div>
+  <div class="panel-section">
+    <h2 style="font-size:16px;">Daftar Emoji Siap Pakai</h2>
+    <p style="font-size:13px;">Salin salah satu, tempel ke kolom emoji di Sheets:</p>
+    <p style="font-size:20px;line-height:1.7;letter-spacing:4px;">
+    🐔🐄🐱🐶🐰🐟🐸🐝🐌🐘🐢🐦🦋🐍🐷🐴🦆🐿️🦉🦁<br>
+    🌸🌳🌻🍎🍄🍃🌵🌴🌾🥕🍇🍉🌼🍂🌱</p>
+  </div>
+  <div class="panel-section">
+    <h2 style="font-size:16px;">2. Sheet Angka (Berhitung)</h2>
+    <p>Kolom: <b>emoji, jumlahBenar, salah1, salah2</b><br>Contoh baris: <i>🍎, 4, 3, 6</i></p>
+  </div>
+  <div class="panel-section">
+    <h2 style="font-size:16px;">3. Setelah selesai edit</h2>
+    <p>Di Google Sheets: File → Bagikan → Publikasikan ke web → pilih sheet-nya → format CSV → salin link. Tempel link itu ke variabel <code>SHEET_URL_MEMBACA</code> / <code>SHEET_URL_BERHITUNG</code> di kode (dekat atas file JS).</p>
+  </div>
+  <div class="panel-section">
+    <button class="btn-ghost" id="reloadBtn">🔄 Muat Ulang Soal</button>
+    <div class="status-line" id="statusLine">Memakai soal bawaan (belum tersambung ke Sheets).</div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   KONFIGURASI — GURU/DEVELOPER ISI DI SINI
+   Kosongkan (biarkan '') kalau belum mau pakai Google Sheets;
+   game otomatis memakai FALLBACK_* di bawah.
+   ========================================================= */
+const CONFIG = {
+  SHEET_URL_MEMBACA: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS3bqOdEtcSahRMlie0QkNBjqEdSRIlT3V7LKxph2j5tIZTfpa6CzPcQn0Lyz4fm5ei1HUdFeTr4Uwg/pub?gid=0&single=true&output=csv',   // contoh: 'https://docs.google.com/spreadsheets/d/e/XXXX/pub?gid=0&single=true&output=csv'
+  SHEET_URL_BERHITUNG: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS3bqOdEtcSahRMlie0QkNBjqEdSRIlT3V7LKxph2j5tIZTfpa6CzPcQn0Lyz4fm5ei1HUdFeTr4Uwg/pub?gid=237250703&single=true&output=csv', // sheet kedua, gid berbeda
+  QUESTIONS_PER_ROUND: 5
+};
+
+const FALLBACK_MEMBACA = [
+  {kata:'baju', emoji:'👕', tampil:'ba__', jawaban:'ju', salah:['mi','ka']},
+  {kata:'ayam', emoji:'🐔', tampil:'a__', jawaban:'yam', salah:['tan','bar']},
+  {kata:'kucing', emoji:'🐱', tampil:'ku__', jawaban:'cing', salah:['reta','song']},
+  {kata:'ikan', emoji:'🐟', tampil:'i__', jawaban:'kan', salah:['tik','bal']},
+  {kata:'bunga', emoji:'🌸', tampil:'bu__', jawaban:'nga', salah:['tir','lan']},
+  {kata:'macan', emoji:'🐯', tampil:'ma__', jawaban:'can', salah:['kar','sir']},
+  {kata:'pohon', emoji:'🌳', tampil:'po__', jawaban:'hon', salah:['tas','din']},
+  {kata:'sapi', emoji:'🐄', tampil:'sa__', jawaban:'pi', salah:['te','mu']}
+];
+
+const FALLBACK_BERHITUNG = [
+  {emoji:'🍎', jumlah:3, salah:[2,5]},
+  {emoji:'🐸', jumlah:4, salah:[3,6]},
+  {emoji:'🌻', jumlah:2, salah:[1,4]},
+  {emoji:'🐝', jumlah:5, salah:[4,7]},
+  {emoji:'🍄', jumlah:6, salah:[5,8]},
+  {emoji:'🐟', jumlah:3, salah:[2,4]},
+  {emoji:'🍃', jumlah:4, salah:[3,5]}
+];
+
+let dataMembaca = FALLBACK_MEMBACA;
+let dataBerhitung = FALLBACK_BERHITUNG;
+
+function parseCSV(text){
+  const lines = text.trim().split('\n').filter(Boolean);
+  const rows = lines.slice(1); // skip header
+  return rows.map(line => line.split(',').map(c => c.trim()));
+}
+
+async function loadSheet(url){
+  if(!url) return null;
+  try{
+    const res = await fetch(url, {cache:'no-store'});
+    if(!res.ok) throw new Error('fetch gagal');
+    const text = await res.text();
+    const rows = parseCSV(text);
+    if(!rows.length) throw new Error('kosong');
+    return rows;
+  }catch(e){
+    console.warn('Gagal ambil sheet, pakai fallback:', e);
+    return null;
+  }
+}
+
+async function loadAllData(){
+  const statusLine = document.getElementById('statusLine');
+  statusLine.textContent = 'Memuat soal...';
+  const [rowsBaca, rowsHitung] = await Promise.all([
+    loadSheet(CONFIG.SHEET_URL_MEMBACA),
+    loadSheet(CONFIG.SHEET_URL_BERHITUNG)
+  ]);
+
+  if(rowsBaca){
+    dataMembaca = rowsBaca.map(r => ({kata:r[0], emoji:r[1], tampil:r[2], jawaban:r[3], salah:[r[4],r[5]]})).filter(d=>d.kata && d.tampil && d.jawaban);
+    statusLine.textContent = 'Soal membaca tersambung ke Sheets ✅';
+  } else {
+    dataMembaca = FALLBACK_MEMBACA;
+    statusLine.textContent = CONFIG.SHEET_URL_MEMBACA ? 'Gagal muat sheet membaca, pakai bawaan.' : 'Memakai soal bawaan (belum tersambung ke Sheets).';
+  }
+
+  if(rowsHitung){
+    dataBerhitung = rowsHitung.map(r => ({emoji:r[0], jumlah:parseInt(r[1]), salah:[parseInt(r[2]),parseInt(r[3])]})).filter(d=>d.emoji && !isNaN(d.jumlah));
+  } else {
+    dataBerhitung = FALLBACK_BERHITUNG;
+  }
+}
+
+/* ---------- util ---------- */
+function shuffle(arr){ return [...arr].sort(()=>Math.random()-0.5); }
+function speak(text){
+  if(!window.speechSynthesis) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'id-ID';
+  u.rate = 0.85;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(u);
+}
+
+/* ---------- state ---------- */
+let session = { mode:null, pool:[], idx:0, correct:0 };
+
+/* ---------- screens ---------- */
+const mainEl = document.getElementById('main');
+
+function renderHome(){
+  mainEl.innerHTML = `
+    <div class="home">
+      <div style="font-size:56px;margin-bottom:8px;">🐿️🌼</div>
+      <h2>Ayo Belajar!</h2>
+      <p class="sub">Pilih mau belajar apa hari ini</p>
+      <div class="mode-grid">
+        <button class="mode-card read" id="btnRead">
+          <span class="mode-emoji">🔤</span>
+          <span>
+            <div class="mode-title">Belajar Membaca</div>
+            <div class="mode-desc">Tebak nama hewan &amp; tumbuhan</div>
+          </span>
+        </button>
+        <button class="mode-card count" id="btnCount">
+          <span class="mode-emoji">🔢</span>
+          <span>
+            <div class="mode-title">Belajar Berhitung</div>
+            <div class="mode-desc">Hitung jumlah gambar</div>
+          </span>
+        </button>
+        <button class="mode-card susun" id="btnSusun">
+          <span class="mode-emoji">🔠</span>
+          <span>
+            <div class="mode-title">Susun Huruf</div>
+            <div class="mode-desc">Susun huruf jadi kata yang benar</div>
+          </span>
+        </button>
+      </div>
+    </div>`;
+  document.getElementById('btnRead').onclick = () => startSession('read');
+  document.getElementById('btnCount').onclick = () => startSession('count');
+  document.getElementById('btnSusun').onclick = () => startSession('susun');
+}
+
+function startSession(mode){
+  const source = mode === 'count' ? dataBerhitung : dataMembaca; // 'read' & 'susun' reuse dataMembaca
+  const n = Math.min(CONFIG.QUESTIONS_PER_ROUND, source.length);
+  session = { mode, pool: shuffle(source).slice(0,n), idx:0, correct:0 };
+  renderQuestion();
+}
+
+function renderQuestion(){
+  if(session.mode === 'susun'){ renderSusunHuruf(); return; }
+
+  const item = session.pool[session.idx];
+  const isRead = session.mode === 'read';
+  const total = session.pool.length;
+  const pct = Math.round((session.idx/total)*100);
+
+  let choices, stageHtml, promptText;
+  if(isRead){
+    promptText = 'Lengkapi kata ini!';
+    choices = shuffle([item.jawaban, ...item.salah]);
+    stageHtml = `
+      <div class="prompt">${promptText}</div>
+      <div class="big-emoji">${item.emoji}</div>
+      <div class="count-row" style="font-size:38px;letter-spacing:2px;">${item.tampil}</div>
+      <button class="speak-btn" id="speakBtn" aria-label="Dengar kata">🔊</button>`;
+  } else {
+    promptText = 'Ada berapa?';
+    const options = shuffle([item.jumlah, ...item.salah]);
+    choices = options.map(String);
+    stageHtml = `
+      <div class="prompt">${promptText}</div>
+      <div class="count-row">${item.emoji.repeat(item.jumlah)}</div>
+      <button class="speak-btn" id="speakBtn" aria-label="Dengar pertanyaan">🔊</button>`;
+  }
+
+  mainEl.innerHTML = `
+    <div class="quiz">
+      <div class="progress-row">
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <div class="stars">⭐ ${session.correct}</div>
+      </div>
+      <div class="stage">${stageHtml}</div>
+      <div class="choices" id="choicesWrap">
+        ${choices.map(c => `<button class="choice-btn" data-val="${c}">${c}</button>`).join('')}
+      </div>
+      <div class="feedback" id="feedback"></div>
+      <button class="back-link" id="backBtn">← Kembali ke menu</button>
+    </div>`;
+
+  document.getElementById('backBtn').onclick = renderHome;
+  document.getElementById('speakBtn').onclick = () => speak(isRead ? item.kata : String(item.jumlah));
+
+  const correctVal = isRead ? item.jawaban : String(item.jumlah);
+  document.querySelectorAll('.choice-btn').forEach(btn => {
+    btn.onclick = () => handleAnswer(btn, correctVal, isRead ? item.kata : null);
+  });
+
+  // auto-read the first time a question appears
+  speak(isRead ? 'Lengkapi kata ini' : 'Ada berapa?');
+}
+
+/* ---------- mode: susun huruf ---------- */
+let susunState = null;
+
+function renderSusunHuruf(){
+  const item = session.pool[session.idx];
+  const total = session.pool.length;
+  const pct = Math.round((session.idx/total)*100);
+  const target = item.kata.toLowerCase();
+
+  const letters = shuffle(target.split('').map((ch,i) => ({ch, id:i, used:false})));
+  susunState = { target, letters, answer:[] };
+
+  mainEl.innerHTML = `
+    <div class="quiz">
+      <div class="progress-row">
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <div class="stars">⭐ ${session.correct}</div>
+      </div>
+      <div class="stage">
+        <div class="prompt">Susun huruf jadi kata yang benar!</div>
+        <div class="big-emoji">${item.emoji}</div>
+        <button class="speak-btn" id="speakBtn" aria-label="Dengar kata">🔊</button>
+      </div>
+      <div class="answer-box" id="answerBox"></div>
+      <div class="answer-slot" id="letterTray"></div>
+      <button class="undo-btn" id="undoBtn">↩ Hapus huruf terakhir</button>
+      <div class="feedback" id="feedback"></div>
+      <button class="back-link" id="backBtn">← Kembali ke menu</button>
+    </div>`;
+
+  document.getElementById('backBtn').onclick = renderHome;
+  document.getElementById('speakBtn').onclick = () => speak(target);
+  document.getElementById('undoBtn').onclick = undoLetter;
+  renderLetterTray();
+  speak('Susun huruf jadi kata yang benar');
+}
+
+function renderLetterTray(){
+  const tray = document.getElementById('letterTray');
+  const box = document.getElementById('answerBox');
+  if(!tray || !box) return;
+
+  tray.innerHTML = susunState.letters.map(l =>
+    `<button class="letter-tile ${l.used ? 'placed':''}" data-id="${l.id}" ${l.used?'disabled':''}>${l.ch}</button>`
+  ).join('');
+  box.innerHTML = susunState.answer.map(ch => `<span class="letter-tile">${ch}</span>`).join('')
+    || `<span style="color:#c9c2a6;font-size:14px;align-self:center;">ketuk huruf di bawah</span>`;
+
+  tray.querySelectorAll('.letter-tile:not(.placed)').forEach(btn => {
+    btn.onclick = () => pickLetter(parseInt(btn.dataset.id));
+  });
+}
+
+function pickLetter(id){
+  const letter = susunState.letters.find(l => l.id === id && !l.used);
+  if(!letter) return;
+  letter.used = true;
+  susunState.answer.push(letter.ch);
+  renderLetterTray();
+
+  if(susunState.answer.length === susunState.target.length){
+    checkSusunHuruf();
+  }
+}
+
+function undoLetter(){
+  if(!susunState.answer.length) return;
+  const lastCh = susunState.answer.pop();
+  const letter = [...susunState.letters].reverse().find(l => l.used && l.ch === lastCh);
+  if(letter) letter.used = false;
+  renderLetterTray();
+}
+
+function checkSusunHuruf(){
+  const feedback = document.getElementById('feedback');
+  const assembled = susunState.answer.join('');
+  const isCorrect = assembled === susunState.target;
+
+  document.getElementById('undoBtn').style.display = 'none';
+  document.querySelectorAll('.letter-tile').forEach(b => b.disabled = true);
+
+  if(isCorrect){
+    feedback.textContent = 'Betul! Hebat! 🎉';
+    feedback.className = 'feedback ok';
+    session.correct++;
+    speak(`Betul, ${susunState.target}`);
+  } else {
+    feedback.textContent = `Belum tepat. Katanya: ${susunState.target}`;
+    feedback.className = 'feedback no';
+    speak('Belum tepat, ayo coba lagi nanti');
+  }
+
+  setTimeout(() => {
+    session.idx++;
+    if(session.idx < session.pool.length){
+      renderQuestion();
+    } else {
+      renderResult();
+    }
+  }, 1600);
+}
+
+function handleAnswer(btn, correctVal, fullWord){
+  const feedback = document.getElementById('feedback');
+  const allBtns = document.querySelectorAll('.choice-btn');
+  allBtns.forEach(b => b.disabled = true);
+
+  if(btn.dataset.val === correctVal){
+    btn.classList.add('correct');
+    feedback.textContent = fullWord ? `Betul! Kata: ${fullWord} 🎉` : 'Betul! Hebat! 🎉';
+    feedback.className = 'feedback ok';
+    session.correct++;
+    speak(fullWord ? `Betul, ${fullWord}` : 'Betul, hebat!');
+  } else {
+    btn.classList.add('wrong');
+    allBtns.forEach(b => { if(b.dataset.val === correctVal) b.classList.add('correct'); });
+    feedback.textContent = fullWord ? `Belum tepat. Katanya: ${fullWord}` : `Belum tepat. Jawabannya: ${correctVal}`;
+    feedback.className = 'feedback no';
+    speak('Belum tepat, ayo coba lagi nanti');
+  }
+
+  setTimeout(() => {
+    session.idx++;
+    if(session.idx < session.pool.length){
+      renderQuestion();
+    } else {
+      renderResult();
+    }
+  }, 1400);
+}
+
+function renderResult(){
+  const total = session.pool.length;
+  const good = session.correct === total;
+  mainEl.innerHTML = `
+    <div class="result">
+      <div class="big-emoji">${good ? '🏆' : '🌱'}</div>
+      <h2>${good ? 'Sempurna!' : 'Kerja Bagus!'}</h2>
+      <p>Kamu benar ${session.correct} dari ${total} soal.</p>
+      <button class="primary-btn" id="againBtn">Main Lagi</button>
+      <div><button class="back-link" id="homeBtn2">← Kembali ke menu</button></div>
+    </div>`;
+  document.getElementById('againBtn').onclick = () => startSession(session.mode);
+  document.getElementById('homeBtn2').onclick = renderHome;
+}
+
+/* ---------- panel ---------- */
+const panel = document.getElementById('panel');
+const overlay = document.getElementById('panelOverlay');
+function openPanel(){ panel.classList.add('open'); overlay.classList.add('open'); }
+function closePanelFn(){ panel.classList.remove('open'); overlay.classList.remove('open'); }
+document.getElementById('menuBtn').onclick = openPanel;
+document.getElementById('closePanel').onclick = closePanelFn;
+overlay.onclick = closePanelFn;
+document.getElementById('reloadBtn').onclick = async () => {
+  await loadAllData();
+};
+
+/* ---------- init ---------- */
+loadAllData().then(renderHome);
+</script>
+</body>
+</html>
